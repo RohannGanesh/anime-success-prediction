@@ -1,9 +1,6 @@
 """
 DATA 210P Final Project: Predicting Anime Success
 Step 3: Logistic Regression Modeling
-
-Predicts: is_highly_rated (Score >= 8.0)
-
 Author: Rohan
 Date: Winter 2026
 """

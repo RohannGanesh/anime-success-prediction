@@ -1,7 +1,6 @@
 """
 DATA 210P Final Project: Predicting Anime Success
 Step 1: Data Preparation
-
 Author: Rohan
 Date: Winter 2026
 """
@@ -38,7 +37,6 @@ def load_and_prepare_data(filepath):
     
     print("\n[3/7] Cleaning Source variable...")
     
-    # Group rare sources
     source_counts = df_model['Source'].value_counts()
     top_sources = source_counts[source_counts >= 100].index.tolist()
     df_model['Source_clean'] = df_model['Source'].apply(
@@ -48,7 +46,6 @@ def load_and_prepare_data(filepath):
     
     print("\n[4/7] Creating genre dummy variables...")
     
-    # Get all genres
     all_genres = []
     for genres in df_model['Genres']:
         if pd.notna(genres) and genres != 'UNKNOWN':
@@ -70,7 +67,6 @@ def load_and_prepare_data(filepath):
 
     print("\n[5/7] Cleaning Studio variable...")
     
-    # Get primary studio (first one listed)
     def get_primary_studio(studio):
         if pd.isna(studio) or studio == 'UNKNOWN':
             return 'Unknown'
@@ -78,7 +74,6 @@ def load_and_prepare_data(filepath):
     
     df_model['Studio_primary'] = df_model['Studios'].apply(get_primary_studio)
     
-    # Group rare studios
     studio_counts = df_model['Studio_primary'].value_counts()
     top_studios = studio_counts[studio_counts >= 50].index.tolist()
     top_studios = [s for s in top_studios if s != 'Unknown'][:10]
@@ -142,10 +137,8 @@ def main():
         print("Please update DATA_PATH to point to your anime-dataset-2023.csv file")
         return None
     
-    # Prepare data
     df = load_and_prepare_data(DATA_PATH)
     
-    # Save prepared data
     df.to_csv(OUTPUT_PATH, index=False)
     print(f"\n✓ Saved prepared data to: {OUTPUT_PATH}")
     

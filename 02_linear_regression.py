@@ -41,34 +41,28 @@ def build_incremental_models(df):
     
     models = {}
     
-    # Model 0: Null (intercept only)
     print("\n[M0] Null Model (Intercept Only)...")
     models['M0_Null'] = smf.ols('Score_clean ~ 1', data=df).fit()
     
-    # Model 1: Type only
     print("[M1] Adding Type...")
     models['M1_Type'] = smf.ols('Score_clean ~ C(Type_clean)', data=df).fit()
     
-    # Model 2: Type + Source
     print("[M2] Adding Source...")
     models['M2_Source'] = smf.ols(
         'Score_clean ~ C(Type_clean) + C(Source_clean)', 
         data=df
     ).fit()
     
-    # Model 3: + Episodes + Year
     print("[M3] Adding Episodes + Year...")
     models['M3_EpsYear'] = smf.ols(
         'Score_clean ~ C(Type_clean) + C(Source_clean) + Episodes_log + Year', 
         data=df
     ).fit()
     
-    # Model 4: + Genres
     print("[M4] Adding Genres...")
     formula4 = f'Score_clean ~ C(Type_clean) + C(Source_clean) + Episodes_log + Year + {genre_formula}'
     models['M4_Genres'] = smf.ols(formula4, data=df).fit()
     
-    # Model 5: + Studios (Full Model)
     print("[M5] Adding Studios (Full Model)...")
     formula5 = f'Score_clean ~ C(Type_clean) + C(Source_clean) + Episodes_log + Year + {genre_formula} + C(Studio_clean)'
     models['M5_Full'] = smf.ols(formula5, data=df).fit()
@@ -106,24 +100,20 @@ def run_diagnostics(model, df):
     print("MODEL DIAGNOSTICS")
     print("="*60)
     
-    # Get residuals
     residuals = model.resid
     fitted = model.fittedvalues
     
-    # Normality tests
     print("\n1. NORMALITY OF RESIDUALS")
     subsample = residuals.sample(min(5000, len(residuals)), random_state=42)
     shapiro_stat, shapiro_p = stats.shapiro(subsample)
     print(f"   Shapiro-Wilk: W = {shapiro_stat:.4f}, p = {shapiro_p:.4e}")
     print(f"   Result: {'⚠️ Violated' if shapiro_p < 0.05 else '✓ Satisfied'}")
     
-    # Homoscedasticity
     print("\n2. HOMOSCEDASTICITY")
     bp_stat, bp_p, _, _ = het_breuschpagan(residuals, model.model.exog)
     print(f"   Breusch-Pagan: LM = {bp_stat:.2f}, p = {bp_p:.4e}")
     print(f"   Result: {'⚠️ Heteroscedasticity detected' if bp_p < 0.05 else '✓ Satisfied'}")
     
-    # Independence
     print("\n3. INDEPENDENCE")
     dw = durbin_watson(residuals)
     print(f"   Durbin-Watson: {dw:.4f}")
@@ -141,38 +131,31 @@ def plot_diagnostics(model, df, output_path='outputs/linear_regression_diagnosti
     
     print(f"\nCreating diagnostic plots: {output_path}")
     
-    # Ensure output directory exists
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     
-    # Get residuals and fitted values
     fitted = model.fittedvalues
     residuals = model.resid
     std_resid = model.get_influence().resid_studentized_internal
     
     pdf = PdfPages(output_path)
     
-    # Page 1: Residual plots
     fig, axes = plt.subplots(2, 2, figsize=(11, 8.5))
     fig.suptitle('Linear Regression Diagnostics', fontsize=16, fontweight='bold')
     
-    # Residuals vs Fitted
     axes[0, 0].scatter(fitted, residuals, alpha=0.3, s=10)
     axes[0, 0].axhline(y=0, color='red', linestyle='--')
     axes[0, 0].set_xlabel('Fitted Values')
     axes[0, 0].set_ylabel('Residuals')
     axes[0, 0].set_title('Residuals vs Fitted')
     
-    # Q-Q Plot
     stats.probplot(std_resid, dist="norm", plot=axes[0, 1])
     axes[0, 1].set_title('Q-Q Plot')
     
-    # Scale-Location
     axes[1, 0].scatter(fitted, np.sqrt(np.abs(std_resid)), alpha=0.3, s=10)
     axes[1, 0].set_xlabel('Fitted Values')
     axes[1, 0].set_ylabel('√|Standardized Residuals|')
     axes[1, 0].set_title('Scale-Location')
     
-    # Histogram
     axes[1, 1].hist(std_resid, bins=50, density=True, alpha=0.7, edgecolor='white')
     x = np.linspace(-4, 4, 100)
     axes[1, 1].plot(x, stats.norm.pdf(x), 'r-', linewidth=2)
@@ -183,11 +166,9 @@ def plot_diagnostics(model, df, output_path='outputs/linear_regression_diagnosti
     pdf.savefig(fig)
     plt.close()
     
-    # Page 2: Model comparison
     fig, axes = plt.subplots(2, 2, figsize=(11, 8.5))
     fig.suptitle('Model Comparison', fontsize=16, fontweight='bold')
     
-    # This would need the models dictionary - simplified version
     ax = axes[0, 0]
     ax.text(0.5, 0.5, f'R² = {model.rsquared:.4f}\nAdj R² = {model.rsquared_adj:.4f}',
             ha='center', va='center', fontsize=14, transform=ax.transAxes)
@@ -200,7 +181,6 @@ def plot_diagnostics(model, df, output_path='outputs/linear_regression_diagnosti
     ax.set_title('Information Criteria')
     ax.axis('off')
     
-    # Top coefficients
     coefs = model.params.drop('Intercept').sort_values()
     
     ax = axes[1, 0]
@@ -231,7 +211,6 @@ def print_key_findings(model):
     print("KEY FINDINGS")
     print("="*60)
     
-    # Get significant coefficients
     sig = model.pvalues < 0.05
     coefs = model.params[sig].sort_values()
     
@@ -251,40 +230,30 @@ def print_key_findings(model):
 
 def main():
   
-    # Set paths
     DATA_PATH = "data/anime_modeling_data.csv"
     OUTPUT_PATH = "outputs/linear_regression_diagnostics.pdf"
     
-    # Check if prepared data exists
     if not os.path.exists(DATA_PATH):
         print(f"ERROR: Prepared data not found at {DATA_PATH}")
         print("Please run 01_data_preparation.py first")
         return
     
-    # Load data
     print(f"Loading data from: {DATA_PATH}")
     df = pd.read_csv(DATA_PATH)
     print(f"Sample size: {len(df):,} anime")
     
-    # Build models
     models = build_incremental_models(df)
     
-    # Compare models
     comparison = compare_models(models)
     
-    # Get best model (full model)
     best_model = models['M5_Full']
     
-    # Run diagnostics
     diagnostics = run_diagnostics(best_model, df)
     
-    # Create diagnostic plots
     plot_diagnostics(best_model, df, OUTPUT_PATH)
     
-    # Print key findings
     print_key_findings(best_model)
     
-    # Save model summary
     with open('outputs/linear_regression_summary.txt', 'w') as f:
         f.write(best_model.summary().as_text())
     print("\n✓ Model summary saved to: outputs/linear_regression_summary.txt")
